@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+WHITE='\033[1;37m'
+NC='\033[0m'
+
+# Ensure that Docker is running...
+if ! docker info > /dev/null 2>&1; then
+    echo -e "${WHITE}Docker is not running.${NC}" >&2
+    exit 1
+fi
+
+# Source the ".env" file so environment variables are available...
+if [ -f /workspace/.env ]; then
+    source /workspace/.env
+fi
+
+# Run commands in the Docker container...
+if [ $# -gt 0 ]; then
+
+    # Initiate a CLI development shell within the application container...
+    if [ "$1" == "cli-shell" ] ; then
+        shift 1
+
+        docker run --rm -it \
+            -w /workspace \
+            -v $(pwd):/workspace \
+            --env-file .env \
+            app-cli "$@"
+
+    # Proxy other commands to the "docker" binary...
+    else
+        docker "$@"
+    fi
+else
+    docker ps
+fi

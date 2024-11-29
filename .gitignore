@@ -1,0 +1,19 @@
+# Local .env files
+.env
+.env.backup
+
+# Include a line for your operating system-specific temporary files, such as .DS_Store (for macOS) or Thumbs.db (for Windows)
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+*-debug.log
+*-error.log
+**/.DS_Store
+dist
+tmp
+node_modules
+oclif.manifest.json
+
+yarn.lock
+pnpm-lock.yaml
