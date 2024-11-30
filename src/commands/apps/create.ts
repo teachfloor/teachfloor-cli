@@ -1,10 +1,18 @@
-import {Command} from '@oclif/core'
+import { Command, Args } from '@oclif/core'
 import inquirer from 'inquirer'
 import * as fs from 'fs'
-import * as path from 'path'
 import * as child_process from 'child_process'
 
+import { createAppStructure } from '../../utils/appUtils.js'
+
 export default class AppsCreate extends Command {
+  static args = {
+    appSlug: Args.string({
+      description: 'name of the app',
+      required: true,
+    }),
+  }
+
   static override description = 'Create a new app'
 
   static override examples = [
@@ -12,20 +20,20 @@ export default class AppsCreate extends Command {
   ]
 
   public async run(): Promise<void> {
-    // Define the base folder for apps
-    const baseFolder = path.resolve(process.cwd(), 'apps');
-
-    // Ensure the base folder exists
-    if (!fs.existsSync(baseFolder)) {
-      fs.mkdirSync(baseFolder, { recursive: true });
-    }
+    const { args } = await this.parse(AppsCreate)
 
     // Prompt the user for extension details
     const answers = await inquirer.prompt([
       {
         type: 'input',
+        name: 'appId',
+        message: 'App ID:',
+        default: () => `${args.appSlug.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}`,
+      },
+      {
+        type: 'input',
         name: 'name',
-        message: 'Name:',
+        message: 'Display Name:',
         validate: (value) => (value ? true : 'Name is required'),
       },
       {
@@ -41,51 +49,25 @@ export default class AppsCreate extends Command {
         default: '1.0.0',
         validate: (value) => (value.match(/^\d+\.\d+\.\d+$/) ? true : 'Version must be in semver format (e.g., 1.0.0)'),
       },
-      // {
-      //   type: 'confirm',
-      //   name: 'useReact',
-      //   message: 'Do you want to include React support?',
-      //   default: true,
-      // },
     ]);
 
+    const appDir = args.appSlug
+
     // Create the extension directory under the base folder
-    const dir = path.join(baseFolder, answers.name);
+    const dir = appDir
     if (fs.existsSync(dir)) {
-      this.error(`An extension named "${answers.name}" already exists in the "${baseFolder}" folder.`);
+      this.error(`An extension named "${answers.name}" already exists in the "${appDir}" folder.`);
       return;
     }
     fs.mkdirSync(dir, { recursive: true });
 
-    // Write manifest.json
-    const manifest = {
-      name: answers.name,
-      description: answers.description,
-      version: answers.version,
-      entry: 'src/index.js',
-    };
-    fs.writeFileSync(path.join(dir, 'teachfloor-app.json'), JSON.stringify(manifest, null, 2));
+    // Create the app structure
+    this.log('Setting up app structure...');
+    createAppStructure(dir, answers.appId, answers.name, answers.description, answers.version);
 
-    // Create basic project structure
-    fs.mkdirSync(path.join(dir, 'src'));
-    fs.writeFileSync(path.join(dir, 'README.md'), `# ${answers.name}\n\n${answers.description}`);
-
-    this.log('Setting up React environment...');
-    fs.writeFileSync(
-      path.join(dir, 'src/index.js'),
-      `
-import React from 'react';
-import ReactDOM from 'react-dom';
-
-const App = () => <div>Hello, ${answers.name}!</div>;
-
-ReactDOM.render(<App />, document.getElementById('root'));
-        `.trim()
-    );
-
-    // Install React dependencies
+    // Install npm dependencies
     try {
-      child_process.execSync('npm init -y && npm install react react-dom', { cwd: dir, stdio: 'inherit' });
+      child_process.execSync('npm install', { cwd: dir, stdio: 'inherit' });
     } catch (error) {
       this.error('Failed to install React dependencies. Please install them manually.');
     }

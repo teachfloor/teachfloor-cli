@@ -24,6 +24,7 @@ if [ $# -gt 0 ]; then
         docker run --rm -it \
             -w /workspace \
             -v $(pwd):/workspace \
+            -p "${PORT}:${PORT}" \
             --env-file .env \
             app-cli "$@"
 
