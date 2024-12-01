@@ -56,6 +56,33 @@ This will:
 * Map your current project directory to /workspace inside the container.
 * Open a shell where you can interact with the CLI.
 
+### 4. Developing the CLI
+
+**Important oclif Commands**
+
+The following commands help you generate and manage new commands within the CLI:
+
+```bash
+oclif generate command <command-name>
+oclif generate command apps:upload
+oclif generate command apps:add:view
+```
+
+**Building and Testing the CLI**
+
+To build and test the CLI locally, follow these steps:
+
+Build the CLI: Build the TypeScript source files into executable JavaScript files:
+
+```bash
+npm run build
+```
+
+Link the CLI: Use npm link to link the CLI globally for testing:
+```bash
+npm link
+```
+
 **Run Other Docker Commands**
 
 You can also proxy other Docker commands through the execute script. For example, to list running containers, use:

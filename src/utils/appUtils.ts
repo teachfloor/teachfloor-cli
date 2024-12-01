@@ -92,17 +92,11 @@ module.exports = {
 )
 
 const getExampleViewSnippet = () => (
-`import React, { useEffect } from 'react';
-import { Container, Text } from '@teachfloor/extension-kit'
+`import React from 'react';
+import { useExtensionContext, Container, Text } from '@teachfloor/extension-kit'
 
 const App = () => {
-  useEffect(() => {
-    tf('onInit', function (API) {
-      API.on('environment.viewport.changed', (viewport, objectContext) => {
-        console.log('SDK from CLI viewport', viewport, objectContext)
-      });
-    })
-  },[])
+  const { userContext, environment } = useExtensionContext()
 
   return (
     <Container>
@@ -112,6 +106,23 @@ const App = () => {
 };
 
 export default App;
+`
+)
+
+const getIndexJsSnippet = () => (
+`import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { ExtensionContextProvider } from '@teachfloor/extension-kit'
+
+import App from './views/App';
+
+const root = ReactDOM.createRoot(document.getElementById('root'))
+
+root.render(
+  <ExtensionContextProvider>
+    <App />
+  </ExtensionContextProvider>
+);
 `
 )
 
@@ -137,12 +148,7 @@ export const createAppStructure = (rootDir: string, appId: string, appName: stri
     /**
      * src/index.js
      */
-    [`${rootDir}/src/index.js`]: `import React from 'react';
-import ReactDOM from 'react-dom';
-import App from './views/App';
-
-ReactDOM.render(<App />, document.getElementById('root'));
-    `,
+    [`${rootDir}/src/index.js`]: getIndexJsSnippet(),
 
     /**
      * View example
