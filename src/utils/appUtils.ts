@@ -1,4 +1,21 @@
 import * as fs from 'fs'
+import path from 'path'
+
+/**
+ * Check if the command is being run inside the app folder
+ */
+export const isAppFolder = (): boolean => {
+  const requiredFiles = ['teachfloor-app.json'];
+  return requiredFiles.every((file) => fs.existsSync(path.join(process.cwd(), file)));
+}
+
+export const inAppFolderOrError = (): void => {
+  if (!isAppFolder()) {
+    throw new Error(
+      'This command must be run inside a Teachfloor extension app folder.'
+    );
+  }
+}
 
 const getSDKSnippet = (id: string) => (
   `<!-- Teachfloor SDK -->
@@ -11,7 +28,7 @@ const getSDKSnippet = (id: string) => (
             r.async = 1;
             r.src = h + t._tfOpts.id + f + Date.now();
             l.appendChild(r)
-        })(window, document, 'https://${process.env.API_URL || 'app.teachfloor.com'}/apps/', '.js?ver=')
+        })(window, document, '${process.env.APP_URL || 'https://app.teachfloor.com'}/apps/', '.js?ver=')
     </script>
     <!-- End Teachfloor SDK -->`
 )
@@ -102,7 +119,7 @@ export const createAppStructure = (rootDir: string, appId: string, appName: stri
   /**
    * TODO - Get the SDK snippet from api
    */
-  const sdkSnippet = getSDKSnippet('674b222f3a113')
+  const sdkSnippet = getSDKSnippet('67477f0352c52')
 
   /**
    * App folders that will be created
@@ -254,4 +271,32 @@ ${description}
   Object.entries(files).forEach(([filePath, content]) => {
     fs.writeFileSync(filePath, content);
   });
+}
+
+export const createView = (componentName: string): string => {
+  const viewsDir = path.join(process.cwd(), 'src', 'views');
+  const componentPath = path.join(viewsDir, `${componentName}.jsx`);
+
+  if (!fs.existsSync(viewsDir)) {
+    fs.mkdirSync(viewsDir, { recursive: true });
+  }
+
+  const content = `
+import React from 'react';
+import { Container, Text } from '@teachfloor/extension-kit'
+
+const ${componentName} = () => {
+  return (
+    <Container>
+      <Text>${componentName}</Text>
+    </Container>
+  );
+};
+
+export default ${componentName};
+  `.trim();
+
+  fs.writeFileSync(componentPath, content);
+
+  return componentPath;
 }
