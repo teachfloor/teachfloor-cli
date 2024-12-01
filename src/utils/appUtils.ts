@@ -76,7 +76,7 @@ module.exports = {
 
 const getExampleViewSnippet = () => (
 `import React, { useEffect } from 'react';
-import { Container, Text } from '@teachfloor/extension-kit/ui'
+import { Container, Text } from '@teachfloor/extension-kit'
 
 const App = () => {
   useEffect(() => {
