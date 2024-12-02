@@ -88,20 +88,27 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
+  ignoreWarnings: [
+    {
+      module: /ExtensionViewLoader\.js/,
+      message: /the request of a dependency is an expression/,
+    },
+  ],
 };`
 )
 
 const getExampleViewSnippet = () => (
 `import React from 'react';
-import { useExtensionContext, Container, Text } from '@teachfloor/extension-kit'
+import { ExtensionViewLoader } from '@teachfloor/extension-kit'
+
+import manifest from '../../teachfloor-app.json';
 
 const App = () => {
-  const { userContext, environment } = useExtensionContext()
-
   return (
-    <Container>
-      <Text>Welcome to Hello World!</Text>
-    </Container>
+    <ExtensionViewLoader
+      manifest={manifest}
+      componentResolver={(componentName) => import(\`./\${componentName}\`)}
+    />
   );
 };
 

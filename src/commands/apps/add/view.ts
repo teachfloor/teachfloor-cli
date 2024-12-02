@@ -33,24 +33,14 @@ export default class AppsAddView extends Command {
         name: 'componentName',
         message: 'Enter the name of your component:',
         default: (answers): string => {
-          const parts = answers.viewport.split('.').slice(2);
+          const viewport = answers.viewport
+
+          const parts = viewport.includes('.') ? viewport.split('.').slice(2) : [viewport];
 
           /**
-           * Handle specific namespace logic (e.g. "settings")
+           * Capitalize each part and join them
            */
-          const formattedParts = parts.map((part: string, index: number) => {
-            /**
-             * Capitalize all parts except specific namespaces
-             */
-            if (index === 0) {
-              switch (part) {
-                case 'settings':
-                  return part; // Keep "settings" as lowercase
-
-                default:
-              }
-            }
-
+          const formattedParts = parts.map((part: string) => {
             return part.charAt(0).toUpperCase() + part.slice(1);
           });
 
