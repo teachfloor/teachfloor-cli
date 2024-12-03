@@ -1,11 +1,11 @@
 import { Command } from '@oclif/core'
 import inquirer from 'inquirer'
 import fs from 'fs'
-import path from 'path'
+import ora from 'ora'
 
 import { getManifestPath, validateManifest } from '../../../utils/manifestUtils.js'
 import { inAppFolderOrError, createView } from '../../../utils/appUtils.js'
-import { VIEWPORTS } from '../../../config.js'
+import apiClient from '../../../utils/apiClient.js'
 
 export default class AppsAddView extends Command {
   static override description = 'Add a new view'
@@ -14,11 +14,36 @@ export default class AppsAddView extends Command {
     '<%= config.bin %> <%= command.id %>',
   ]
 
+  private async fetchViewports(): Promise<any> {
+    const spinner = ora().start()
+
+    try {
+      const response = await apiClient.get('/viewports');
+      spinner.succeed()
+      return response.data.payload;
+    } catch (error) {
+      spinner.fail('Failed fetching viewports')
+
+      if (error instanceof Error) {
+        this.error(`Error fetching viewports: ${error.message}`);
+      } else {
+        this.error('An unknown error occurred');
+      }
+    }
+  }
+
   public async run(): Promise<void> {
     /**
      * Check if the command is being run inside the app folder
      */
     inAppFolderOrError();
+
+    // Fetch viewports from the API
+    const viewports = await this.fetchViewports();
+
+    if (viewports.length === 0) {
+      this.error('No viewports available.');
+    }
 
     // Prompt the user for extension details
     const answers = await inquirer.prompt([
@@ -26,7 +51,7 @@ export default class AppsAddView extends Command {
         type: 'list',
         name: 'viewport',
         message: 'Select the viewport for your view:',
-        choices: VIEWPORTS,
+        choices: viewports,
       },
       {
         type: 'input',
@@ -35,7 +60,7 @@ export default class AppsAddView extends Command {
         default: (answers): string => {
           const viewport = answers.viewport
 
-          const parts = viewport.includes('.') ? viewport.split('.').slice(2) : [viewport];
+          const parts = viewport.includes('.') ? viewport.split('.').flatMap((part: string) => part.split('-')).slice(2) : [viewport];
 
           /**
            * Capitalize each part and join them
@@ -52,12 +77,18 @@ export default class AppsAddView extends Command {
             : 'Component name must be in PascalCase and start with an uppercase letter.'
         ),
       },
+      {
+        type: 'confirm',
+        name: 'gettingStartedExample',
+        message: 'Generate a "Getting Started" example view?',
+        default: false,
+      },
     ]);
 
     const { viewport, componentName } = answers;
 
     // Create React component file
-    const componentPath = createView(componentName);
+    const componentPath = createView(componentName, answers.gettingStartedExample);
     this.log(`Component view created at ${componentPath}`);
 
     // Update app manifest

@@ -1,6 +1,8 @@
 import * as fs from 'fs'
 import path from 'path'
 
+import { App } from '../types/app.types.js'
+
 /**
  * Check if the command is being run inside the app folder
  */
@@ -133,11 +135,128 @@ root.render(
 `
 )
 
-export const createAppStructure = (rootDir: string, appId: string, appName: string, description: string, version: string) => {
+const getGettingStartedExampleViewContent = () => (
+`import React, { useEffect } from 'react'
+import {
+  Container,
+  SimpleGrid,
+  Grid,
+  Group,
+  Text,
+  Tabs,
+  Avatar,
+  Divider,
+  Button,
+  showDrawer,
+  hideDrawer,
+  useExtensionContext,
+} from '@teachfloor/extension-kit'
+
+const CourseDetailView = () => {
+  const { userContext, environment } = useExtensionContext()
+
+  /**
+   * Toggle the app drawer whenever the
+   * user enters/leaves this viewport
+   */
+  useEffect(() => {
+    showDrawer()
+    return () => hideDrawer()
+  }, [])
+
+  return (
+    <Tabs defaultValue="context">
+      <Tabs.List grow position="center">
+        <Tabs.Tab value="context" p="sm">Context</Tabs.Tab>
+        <Tabs.Tab value="reference" p="sm">Reference</Tabs.Tab>
+      </Tabs.List>
+
+      <Tabs.Panel value="context" pt="lg">
+        <Container>
+          <SimpleGrid verticalSpacing="lg">
+            <Divider label="User Details" />
+            <SimpleGrid verticalSpacing="xs">
+              <Grid>
+                <Grid.Col span={4}>
+                  <Text fw={500} size="sm">ID: </Text>
+                </Grid.Col>
+                <Grid.Col span="auto">
+                  <Text size="sm">{userContext.id}</Text>
+                </Grid.Col>
+              </Grid>
+              <Grid align="center">
+                <Grid.Col span={4}>
+                  <Text fw={500} size="sm">Full Name: </Text>
+                </Grid.Col>
+                <Grid.Col span="auto">
+                  <Group spacing="xs">
+                    <Avatar src={userContext.avatar} size="sm" />
+                    <Text size="sm">{userContext.full_name}</Text>
+                  </Group>
+                </Grid.Col>
+              </Grid>
+              <Grid>
+                <Grid.Col span={4}>
+                  <Text fw={500} size="sm">Email: </Text>
+                </Grid.Col>
+                <Grid.Col span="auto">
+                  <Text size="sm">{userContext.email}</Text>
+                </Grid.Col>
+              </Grid>
+              <Grid>
+                <Grid.Col span={4}>
+                  <Text fw={500} size="sm">Language: </Text>
+                </Grid.Col>
+                <Grid.Col span="auto">
+                  <Text size="sm">{userContext.language}</Text>
+                </Grid.Col>
+              </Grid>
+              <Grid>
+                <Grid.Col span={4}>
+                  <Text fw={500} size="sm">Timezone: </Text>
+                </Grid.Col>
+                <Grid.Col span="auto">
+                  <Text size="sm">{userContext.timezone}</Text>
+                </Grid.Col>
+              </Grid>
+            </SimpleGrid>
+            <Divider label="Environment" />
+            <SimpleGrid verticalSpacing="xs">
+              <Grid>
+                <Grid.Col span={4}>
+                  <Text fw={500} size="sm">Viewport: </Text>
+                </Grid.Col>
+                <Grid.Col span="auto">
+                  <Text size="sm">{environment.viewport}</Text>
+                </Grid.Col>
+              </Grid>
+            </SimpleGrid>
+          </SimpleGrid>
+        </Container>
+      </Tabs.Panel>
+
+      <Tabs.Panel value="reference" pt="lg">
+        <Container>
+          <SimpleGrid>
+            <Text fw={500} size="lg">Use Teachfloor's library of components to quickly build your user interface.</Text>
+            <Text size="sm">If your app needs a frontend, follow the reference documentation to compose a UI. Teachfloor's library of prebuilt components has customizable properties to help you quickly build apps aligned to Teachfloor best practices. Use components to structure layouts and create graphical or interactive experiences in your apps.</Text>
+            <Button size="sm" onClick={() => window.open('https://api.teachfloor.com/docs', '_blank').focus()}>Open Documentation</Button>
+          </SimpleGrid>
+        </Container>
+      </Tabs.Panel>
+    </Tabs>
+  )
+}
+
+export default CourseDetailView
+`.trim()
+)
+
+export const createAppStructure = (rootDir: string, app: App, version: string) => {
   /**
    * TODO - Get the SDK snippet from api
    */
-  const sdkSnippet = getSDKSnippet('67477f0352c52')
+  const sdkSnippet = getSDKSnippet(app.id)
 
   /**
    * App folders that will be created
@@ -162,33 +281,23 @@ export const createAppStructure = (rootDir: string, appId: string, appName: stri
      */
     [`${rootDir}/src/views/App.jsx`]: getExampleViewSnippet(),
 
-    // [`${rootDir}/src/views/App.test.tsx`]: `
-    //   import { render } from '@testing-library/react';
-    //   import App from './App';
-
-    //   test('renders welcome message', () => {
-    //     const { getByText } = render(<App />);
-    //     expect(getByText(/Welcome to ${appName}/i)).toBeInTheDocument();
-    //   });
-    // `,
-
     /**
      * App manifest
      */
     [`${rootDir}/teachfloor-app.json`]: JSON.stringify({
-      id: appId,
+      id: app.id,
       version,
-      name: appName,
-      description,
+      name: app.name,
+      description: app.description,
     }, null, 2),
 
     /**
      * App package.json
      */
     [`${rootDir}/package.json`]: JSON.stringify({
-      name: appName,
+      name: app.name,
       version: version,
-      description: description,
+      description: app.description,
       main: 'src/index.js',
       scripts: {
         start: "webpack serve --mode development --open",
@@ -225,7 +334,7 @@ export const createAppStructure = (rootDir: string, appId: string, appName: stri
     /**
      * public/index.html
      */
-    [`${rootDir}/public/index.html`]: getIndexHtmlSnippet(appName, sdkSnippet),
+    [`${rootDir}/public/index.html`]: getIndexHtmlSnippet(app.name, sdkSnippet),
 
     /**
      * webpack.config.js
@@ -267,10 +376,10 @@ dist/
      * README.md
      */
     [`${rootDir}/README.md`]:
-`# ${appName}
+`# ${app.name}
 
-${description}
-    `,
+${app.description}
+`,
   };
 
   /**
@@ -286,7 +395,7 @@ ${description}
   });
 }
 
-export const createView = (componentName: string): string => {
+export const createView = (componentName: string, gettingStartedExample: boolean): string => {
   const viewsDir = path.join(process.cwd(), 'src', 'views');
   const componentPath = path.join(viewsDir, `${componentName}.jsx`);
 
@@ -294,8 +403,8 @@ export const createView = (componentName: string): string => {
     fs.mkdirSync(viewsDir, { recursive: true });
   }
 
-  const content = `
-import React from 'react';
+  let content = `
+import React from 'react'
 import { Container, Text } from '@teachfloor/extension-kit'
 
 const ${componentName} = () => {
@@ -303,11 +412,15 @@ const ${componentName} = () => {
     <Container>
       <Text>${componentName}</Text>
     </Container>
-  );
-};
+  )
+}
 
-export default ${componentName};
+export default ${componentName}
   `.trim();
+
+  if (gettingStartedExample) {
+    content = getGettingStartedExampleViewContent()
+  }
 
   fs.writeFileSync(componentPath, content);
 

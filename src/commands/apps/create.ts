@@ -1,9 +1,15 @@
 import { Command, Args } from '@oclif/core'
 import inquirer from 'inquirer'
-import * as fs from 'fs'
-import * as child_process from 'child_process'
+import fs from 'fs'
+import child_process from 'child_process'
+import util from 'util'
+import ora from 'ora'
 
 import { createAppStructure } from '../../utils/appUtils.js'
+import { delay } from '../../utils/utils.js'
+import apiClient from '../../utils/apiClient.js'
+
+const execAsync = util.promisify(child_process.exec)
 
 export default class AppsCreate extends Command {
   static args = {
@@ -19,10 +25,32 @@ export default class AppsCreate extends Command {
     '<%= config.bin %> <%= command.id %>',
   ]
 
+  private async createApp(data: any): Promise<any> {
+    try {
+      const response = await apiClient.post('/apps', {
+        ...data,
+        url: 'http://localhost:3000',
+        meta: {
+          description: data.description,
+          version: data.version,
+        }
+      });
+      return response.data.payload;
+    } catch (error) {
+      if (error instanceof Error) {
+        this.error(`Error creating app: ${error.message}`);
+      } else {
+        this.error('An unknown error occurred');
+      }
+    }
+  }
+
   public async run(): Promise<void> {
     const { args } = await this.parse(AppsCreate)
 
-    // Prompt the user for extension details
+    /**
+     * Prompt the user for app details
+     */
     const answers = await inquirer.prompt([
       {
         type: 'input',
@@ -51,27 +79,44 @@ export default class AppsCreate extends Command {
       },
     ]);
 
+    const spinner = ora('Creating app...').start()
+
+    /**
+     * Create app
+     */
+    const app = await this.createApp(answers)
+
     const appDir = args.appSlug
 
-    // Create the extension directory under the base folder
+    /**
+     * Create the extension directory under the base folder
+     */
     const dir = appDir
     if (fs.existsSync(dir)) {
-      this.error(`An extension named "${answers.name}" already exists in the "${appDir}" folder.`);
+      spinner.fail(`Folder "${appDir}" already exists.`)
       return;
     }
-    fs.mkdirSync(dir, { recursive: true });
+    fs.mkdirSync(dir, { recursive: true })
 
-    // Create the app structure
-    this.log('Setting up app structure...');
-    createAppStructure(dir, answers.appId, answers.name, answers.description, answers.version);
+    /**
+     * Create the app structure
+     */
+    spinner.text = 'Setting up app structure...'
+    createAppStructure(dir, app, answers.version)
 
-    // Install npm dependencies
+    await delay(1000)
+
+    /**
+     * Install npm dependencies
+     */
     try {
-      child_process.execSync('npm install', { cwd: dir, stdio: 'inherit' });
+      spinner.text = 'Installing npm dependencies...'
+      // child_process.execSync('npm install', { cwd: dir, stdio: 'pipe' });
+      await execAsync('npm install', { cwd: dir })
     } catch (error) {
-      this.error('Failed to install React dependencies. Please install them manually.');
+      spinner.fail('Failed to install React dependencies. Please install them manually.')
     }
 
-    this.log(`Extension "${answers.name}" created successfully in ${dir}`);
+    spinner.succeed(`App "${answers.name}" created successfully in "${dir}".`)
   }
 }
