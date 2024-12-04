@@ -1,8 +1,9 @@
 // utils/manifestUtils.ts
 import * as fs from 'fs'
 import path from 'path'
+import { Manifest } from '../types/manifest.types.js'
 
-export function validateManifest(manifestPath: string): void {
+export const validateManifest = (manifestPath: string): void => {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
   if (!manifest.name) {
@@ -22,4 +23,34 @@ export const getManifestPath = (): string => {
   }
 
   return manifestPath
+}
+
+export const getManifest = (): Manifest => {
+  return JSON.parse(fs.readFileSync(getManifestPath(), 'utf8')) || {};
+}
+
+export const getManifestValue = (path: string): any | undefined => (
+  path.split('.').reduce((obj: any, key: string) => {
+    if (obj && typeof obj === 'object' && key in obj) {
+      return obj[key]
+    }
+
+    return undefined
+  }, getManifest())
+)
+
+export const addManifestView = (viewport: string, componentName: string): void => {
+  const manifestPath = getManifestPath()
+
+  validateManifest(manifestPath)
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+  manifest.ui_extension = manifest.ui_extension || {}
+  manifest.ui_extension.views = manifest.ui_extension.views || []
+  manifest.ui_extension.views.push({
+    viewport,
+    component: componentName,
+  })
+
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
 }

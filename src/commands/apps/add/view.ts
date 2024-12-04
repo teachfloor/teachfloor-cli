@@ -1,10 +1,10 @@
 import { Command } from '@oclif/core'
 import inquirer from 'inquirer'
-import fs from 'fs'
 import ora from 'ora'
 
-import { getManifestPath, validateManifest } from '../../../utils/manifestUtils.js'
+import { getManifestValue, addManifestView } from '../../../utils/manifestUtils.js'
 import { inAppFolderOrError, createView } from '../../../utils/appUtils.js'
+import { delay } from '../../../utils/utils.js'
 import apiClient from '../../../utils/apiClient.js'
 
 export default class AppsAddView extends Command {
@@ -18,16 +18,16 @@ export default class AppsAddView extends Command {
     const spinner = ora().start()
 
     try {
-      const response = await apiClient.get('/viewports');
+      const response = await apiClient.get('/viewports')
       spinner.succeed()
-      return response.data.payload;
+      return response.data.payload
     } catch (error) {
       spinner.fail('Failed fetching viewports')
 
       if (error instanceof Error) {
-        this.error(`Error fetching viewports: ${error.message}`);
+        this.error(`Error fetching viewports: ${error.message}`)
       } else {
-        this.error('An unknown error occurred');
+        this.error('An unknown error occurred')
       }
     }
   }
@@ -36,13 +36,30 @@ export default class AppsAddView extends Command {
     /**
      * Check if the command is being run inside the app folder
      */
-    inAppFolderOrError();
+    inAppFolderOrError()
 
     // Fetch viewports from the API
-    const viewports = await this.fetchViewports();
+    const viewports = await this.fetchViewports()
 
     if (viewports.length === 0) {
-      this.error('No viewports available.');
+      this.error('No viewports available.')
+    }
+
+    /**
+     * Get existing views from the manifest
+     */
+    const existingViews = getManifestValue('ui_extension.views') || []
+    const existingViewports = existingViews.map((view: { viewport: string }) => view.viewport)
+
+    /**
+     * Filter out already added viewports from the list of choices
+     */
+    const availableViewports = viewports.filter(
+      (viewport: string) => !existingViewports.includes(viewport)
+    )
+
+    if (availableViewports.length === 0) {
+      this.error('All viewports have already been added.')
     }
 
     // Prompt the user for extension details
@@ -51,7 +68,7 @@ export default class AppsAddView extends Command {
         type: 'list',
         name: 'viewport',
         message: 'Select the viewport for your view:',
-        choices: viewports,
+        choices: availableViewports,
       },
       {
         type: 'input',
@@ -60,16 +77,16 @@ export default class AppsAddView extends Command {
         default: (answers): string => {
           const viewport = answers.viewport
 
-          const parts = viewport.includes('.') ? viewport.split('.').flatMap((part: string) => part.split('-')).slice(2) : [viewport];
+          const parts = viewport.includes('.') ? viewport.split('.').flatMap((part: string) => part.split('-')).slice(2) : [viewport]
 
           /**
            * Capitalize each part and join them
            */
           const formattedParts = parts.map((part: string) => {
-            return part.charAt(0).toUpperCase() + part.slice(1);
-          });
+            return part.charAt(0).toUpperCase() + part.slice(1)
+          })
 
-          return formattedParts.join('') + 'View';
+          return formattedParts.join('') + 'View'
         },
         validate: (input: string) => (
           /^[A-Z][a-zA-Z0-9]*$/.test(input)
@@ -79,38 +96,32 @@ export default class AppsAddView extends Command {
       },
       {
         type: 'confirm',
-        name: 'gettingStartedExample',
+        name: 'withExample',
         message: 'Generate a "Getting Started" example view?',
         default: false,
       },
     ]);
 
-    const { viewport, componentName } = answers;
+    const { viewport, componentName } = answers
 
-    // Create React component file
-    const componentPath = createView(componentName, answers.gettingStartedExample);
-    this.log(`Component view created at ${componentPath}`);
+    const spinner = ora().start()
 
-    // Update app manifest
-    this.updateManifest(viewport, componentName);
+    /**
+     * Create React component file
+     */
+    const componentPath = createView(componentName, answers.withExample)
+    spinner.text = `Component view created at ${componentPath}`
 
-    this.log(`View "${componentName}" added successfully under "${viewport}".`);
-  }
+    await delay(1500)
 
-  private updateManifest(viewport: string, componentName: string): void {
-    const manifestPath = getManifestPath();
+    /**
+     * Update app manifest
+     */
+    addManifestView(viewport, componentName)
+    spinner.text = 'Manifest file updated'
 
-    validateManifest(manifestPath)
+    await delay(1200)
 
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
-    manifest.ui_extension = manifest.ui_extension || {};
-    manifest.ui_extension.views = manifest.ui_extension.views || [];
-    manifest.ui_extension.views.push({
-      viewport,
-      component: componentName,
-    });
-
-    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
-    this.log('Manifest file updated.');
+    spinner.succeed(`View "${componentName}" added successfully under "${viewport}".`)
   }
 }

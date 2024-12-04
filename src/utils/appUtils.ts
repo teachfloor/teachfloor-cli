@@ -135,7 +135,74 @@ root.render(
 `
 )
 
-const getGettingStartedExampleViewContent = () => (
+const getExampleSettingsViewContent = () => (
+`import React, { useState } from 'react'
+import {
+  SettingsView,
+  SimpleGrid,
+  Textarea,
+  Select,
+} from '@teachfloor/extension-kit'
+
+const AppSettings = () => {
+  const [status, setStatus] = useState('');
+
+  const saveSettings = async (values) => {
+    setStatus('Saving...')
+
+    try {
+      const { language, description } = values;
+
+      const result = await fetch('https://www.my-api.com',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            description,
+            language,
+          }),
+        }
+      );
+      await result.text();
+      // Update the form status with a success message.
+      setStatus('Saved!');
+    } catch (error) {
+      console.error(error);
+      // Update the form status with an error message.
+      setStatus('There was an error saving your settings.');
+    }
+  }
+
+  return (
+    <SettingsView onSave={saveSettings} statusMessage={status}>
+      <SimpleGrid>
+        <Textarea
+          name="description"
+          label="Description"
+          placeholder="Description"
+          minRows={4}
+          autosize
+        />
+        <Select
+          name="language"
+          label="Language"
+          placeholder="Language"
+          data={[
+            { value: 'en', label: 'English' },
+            { value: 'it', label: 'Italian' },
+            { value: 'es', label: 'Spanish' },
+            { value: 'fr', label: 'French' },
+          ]}
+        />
+      </SimpleGrid>
+    </SettingsView>
+  )
+}
+
+export default AppSettings
+`.trim()
+)
+
+const getExampleViewContent = () => (
 `import React, { useEffect } from 'react'
 import {
   Container,
@@ -153,7 +220,7 @@ import {
 } from '@teachfloor/extension-kit'
 
 const CourseDetailView = () => {
-  const { userContext, environment } = useExtensionContext()
+  const { userContext, environment, appContext } = useExtensionContext()
 
   /**
    * Toggle the app drawer whenever the
@@ -217,6 +284,25 @@ const CourseDetailView = () => {
                 </Grid.Col>
                 <Grid.Col span="auto">
                   <Text size="sm">{userContext.timezone}</Text>
+                </Grid.Col>
+              </Grid>
+            </SimpleGrid>
+            <Divider label="App Details" />
+            <SimpleGrid verticalSpacing="xs">
+              <Grid>
+                <Grid.Col span={4}>
+                  <Text fw={500} size="sm">App ID: </Text>
+                </Grid.Col>
+                <Grid.Col span="auto">
+                  <Text size="sm">{appContext.id}</Text>
+                </Grid.Col>
+              </Grid>
+              <Grid>
+                <Grid.Col span={4}>
+                  <Text fw={500} size="sm">App Name: </Text>
+                </Grid.Col>
+                <Grid.Col span="auto">
+                  <Text size="sm">{appContext.name}</Text>
                 </Grid.Col>
               </Grid>
             </SimpleGrid>
@@ -395,7 +481,7 @@ ${app.description}
   });
 }
 
-export const createView = (componentName: string, gettingStartedExample: boolean): string => {
+export const createSettings = (componentName: string, withExample: boolean): string => {
   const viewsDir = path.join(process.cwd(), 'src', 'views');
   const componentPath = path.join(viewsDir, `${componentName}.jsx`);
 
@@ -418,8 +504,40 @@ const ${componentName} = () => {
 export default ${componentName}
   `.trim();
 
-  if (gettingStartedExample) {
-    content = getGettingStartedExampleViewContent()
+  if (withExample) {
+    content = getExampleSettingsViewContent()
+  }
+
+  fs.writeFileSync(componentPath, content);
+
+  return componentPath;
+}
+
+export const createView = (componentName: string, withExample: boolean): string => {
+  const viewsDir = path.join(process.cwd(), 'src', 'views');
+  const componentPath = path.join(viewsDir, `${componentName}.jsx`);
+
+  if (!fs.existsSync(viewsDir)) {
+    fs.mkdirSync(viewsDir, { recursive: true });
+  }
+
+  let content = `
+import React from 'react'
+import { Container, Text } from '@teachfloor/extension-kit'
+
+const ${componentName} = () => {
+  return (
+    <Container>
+      <Text>${componentName}</Text>
+    </Container>
+  )
+}
+
+export default ${componentName}
+  `.trim();
+
+  if (withExample) {
+    content = getExampleViewContent()
   }
 
   fs.writeFileSync(componentPath, content);
