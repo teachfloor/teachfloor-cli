@@ -3,7 +3,8 @@ import path from 'path'
 import fs from 'fs'
 import * as child_process from 'child_process'
 
-import { validateManifest } from '../../utils/manifestUtils.js'
+import { getManifest, validateManifest } from '../../utils/manifestUtils.js'
+import apiClient from '../../utils/apiClient.js'
 
 export default class AppsStart extends Command {
   static override description = 'Start a development server for viewing your app in the Teachfloor Dashboard'
@@ -21,6 +22,19 @@ export default class AppsStart extends Command {
       description: 'Path to an extended manifest file for development',
       required: false,
     }),
+  }
+
+  private async uploadManifest(manifest: any): Promise<any> {
+    try {
+      const response = await apiClient.post(`/apps/${manifest.id}/manifest`, { manifest });
+      return response.data.payload;
+    } catch (error) {
+      if (error instanceof Error) {
+        this.error(`Error uploading manifest: ${error.message}`);
+      } else {
+        this.error('An unknown error occurred');
+      }
+    }
   }
 
   public async run(): Promise<void> {
@@ -51,6 +65,8 @@ export default class AppsStart extends Command {
      * Validate manifest
      */
     validateManifest(manifestPath);
+
+    this.uploadManifest(getManifest(manifestPath));
 
     /**
      * Start the development server

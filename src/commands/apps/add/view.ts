@@ -18,7 +18,7 @@ export default class AppsAddView extends Command {
     const spinner = ora().start()
 
     try {
-      const response = await apiClient.get('/viewports')
+      const response = await apiClient.get('/apps/available-viewports')
       spinner.succeed()
       return response.data.payload
     } catch (error) {

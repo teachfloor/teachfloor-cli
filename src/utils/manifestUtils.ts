@@ -25,8 +25,8 @@ export const getManifestPath = (): string => {
   return manifestPath
 }
 
-export const getManifest = (): Manifest => {
-  return JSON.parse(fs.readFileSync(getManifestPath(), 'utf8')) || {};
+export const getManifest = (path: string | null = null): Manifest => {
+  return JSON.parse(fs.readFileSync(path || getManifestPath(), 'utf8')) || {};
 }
 
 export const getManifestValue = (path: string): any | undefined => (
@@ -51,6 +51,32 @@ export const addManifestView = (viewport: string, componentName: string): void =
     viewport,
     component: componentName,
   })
+
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
+}
+
+export const addManifestPermission = (permissionName: string, explanation: string): void => {
+  const manifestPath = getManifestPath()
+
+  validateManifest(manifestPath)
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+  manifest.permissions = manifest.permissions || []
+  manifest.permissions.push({
+    permission: permissionName,
+    purpose: explanation,
+  })
+
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
+}
+
+export const setManifestConfiguration = (key: string, value: string): void => {
+  const manifestPath = getManifestPath()
+
+  validateManifest(manifestPath)
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+  manifest[key] = value
 
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
 }

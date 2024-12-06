@@ -61,6 +61,12 @@ export default class Login extends Command {
         client_secret: clientSecret,
       });
 
+      /**
+       * Save token in local config file
+       */
+      const token = response.data.access_token;
+      setToken(token)
+
       spinner.succeed()
 
       /**
@@ -96,12 +102,6 @@ export default class Login extends Command {
       }
 
       spinner = ora('Storing credentials...').start()
-
-      /**
-       * Save token in local config file
-       */
-      const token = response.data.access_token;
-      setToken(token)
 
       /**
        * Save organization in local config file

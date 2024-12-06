@@ -29,10 +29,11 @@ export default class AppsCreate extends Command {
     try {
       const response = await apiClient.post('/apps', {
         ...data,
-        url: 'http://localhost:3000',
+        // url: 'http://localhost:3000',
         meta: {
           description: data.description,
           version: data.version,
+          sandbox_url: 'http://localhost:3000',
         }
       });
       return response.data.payload;

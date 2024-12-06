@@ -14,6 +14,9 @@ if [ -f /workspace/.env ]; then
     source /workspace/.env
 fi
 
+# Set default PORT if not specified
+PORT=${PORT:-3000}
+
 # Run commands in the Docker container...
 if [ $# -gt 0 ]; then
 

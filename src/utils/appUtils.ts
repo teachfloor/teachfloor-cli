@@ -68,6 +68,10 @@ module.exports = {
     open: true,
     hot: true,
   },
+  devtool: false,
+  cache: {
+    type: 'filesystem',
+  },
   plugins: [
     new HtmlWebpackPlugin({
       template: 'public/index.html', // Path to your template
@@ -77,12 +81,26 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
+        use: [
+          {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: true,
+            },
+          },
+        ],
         exclude: /node_modules/,
       },
       {
         test: /\.jsx?$/,
-        use: 'babel-loader',
+        use: [
+          {
+            loader: 'babel-loader',
+            options: {
+              cacheDirectory: true,
+            },
+          },
+        ],
         exclude: /node_modules/,
       },
     ],
@@ -375,6 +393,7 @@ export const createAppStructure = (rootDir: string, app: App, version: string) =
       version,
       name: app.name,
       description: app.description,
+      distribution_type: 'private',
     }, null, 2),
 
     /**
