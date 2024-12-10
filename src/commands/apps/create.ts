@@ -31,6 +31,7 @@ export default class AppsCreate extends Command {
         ...data,
         // url: 'http://localhost:3000',
         meta: {
+          source: 'cli',
           description: data.description,
           version: data.version,
           sandbox_url: 'http://localhost:3000',

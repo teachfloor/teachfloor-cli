@@ -1,5 +1,7 @@
 import { Command } from '@oclif/core'
 import inquirer from 'inquirer'
+import path from 'path'
+import fs from 'fs'
 import ora from 'ora'
 
 import { getManifestValue, addManifestView } from '../../../utils/manifestUtils.js'
@@ -104,13 +106,44 @@ export default class AppsAddView extends Command {
 
     const { viewport, componentName } = answers
 
+    /**
+     * Does the component already exist?
+     */
+    const componentExists = fs.existsSync(path.resolve(`src/views/${componentName}.jsx`))
+
+    /**
+     * Store a flag for later
+     */
+    let createComponent = true
+
+    /**
+     * If the component file already exist, ask user
+     * if he wants to overwrite it
+     */
+    if (componentExists) {
+      const { overwrite } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'overwrite',
+          message: `The component file "${componentName}.jsx" already exists. Do you want to overwrite it?`,
+          default: false,
+        },
+      ])
+
+      if (!overwrite) {
+        createComponent = false
+      }
+    }
+
     const spinner = ora().start()
 
     /**
      * Create React component file
      */
-    const componentPath = createView(componentName, answers.withExample)
-    spinner.text = `Component view created at ${componentPath}`
+    if (createComponent) {
+      const componentPath = createView(componentName, answers.withExample)
+      spinner.text = `Component view created at ${componentPath}`
+    }
 
     await delay(1500)
 
