@@ -1,5 +1,5 @@
 // utils/manifestUtils.ts
-import * as fs from 'fs'
+import fs from 'fs'
 import path from 'path'
 import { Manifest } from '../types/manifest.types.js'
 
@@ -55,6 +55,24 @@ export const addManifestView = (viewport: string, componentName: string): void =
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
 }
 
+export const removeManifestView = (viewport: string): void => {
+  const manifestPath = getManifestPath()
+
+  validateManifest(manifestPath)
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+
+  if (!manifest.ui_extension || !manifest.ui_extension.views) {
+    throw new Error('No views found in the manifest.')
+  }
+
+  manifest.ui_extension.views = manifest.ui_extension.views.filter(
+    (view: { viewport: string; component: string }) => view.viewport !== viewport
+  )
+
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
+}
+
 export const addManifestPermission = (permissionName: string, explanation: string): void => {
   const manifestPath = getManifestPath()
 
@@ -66,6 +84,20 @@ export const addManifestPermission = (permissionName: string, explanation: strin
     permission: permissionName,
     purpose: explanation,
   })
+
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
+}
+
+export const removeManifestPermission = (permissionName: string): void => {
+  const manifestPath = getManifestPath()
+
+  validateManifest(manifestPath)
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'))
+  manifest.permissions = manifest.permissions || []
+  manifest.permissions = manifest.permissions.filter(
+    (perm: { permission: string }) => perm.permission !== permissionName
+  )
 
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
 }

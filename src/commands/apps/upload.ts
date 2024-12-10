@@ -2,10 +2,12 @@ import { Command } from '@oclif/core'
 import fs from 'fs'
 import path from 'path'
 import child_process from 'child_process'
+import { replaceInFile } from 'replace-in-file'
 import util from 'util'
 import ora from 'ora'
 
 import { inAppFolderOrError } from '../../utils/appUtils.js'
+import { isLoggedInOrError } from '../../utils/configUtils.js'
 import { getManifest, getManifestPath, validateManifest } from '../../utils/manifestUtils.js'
 import { delay } from '../../utils/utils.js'
 import apiClient from '../../utils/apiClient.js'
@@ -26,6 +28,11 @@ export default class AppsUpload extends Command {
     inAppFolderOrError()
 
     /**
+     * Check if user is logged in
+     */
+    isLoggedInOrError()
+
+    /**
      * Validate manifest
      */
     validateManifest(getManifestPath())
@@ -43,30 +50,38 @@ export default class AppsUpload extends Command {
 
       const buildDir = path.join(appDir, 'dist')
       if (!fs.existsSync(buildDir)) {
-        throw new Error('Build directory not found. Ensure "npm run build" generates output in the "dist" folder.');
+        throw new Error('Build directory not found. Ensure "npm run build" generates output in the "dist" folder.')
       }
 
-      const bundleFiles = fs.readdirSync(buildDir);
+      const bundleFiles = fs.readdirSync(buildDir)
       if (bundleFiles.length === 0) {
-        throw new Error('No files found in the build directory.');
+        throw new Error('No files found in the build directory.')
       }
 
-      spinner.text = 'Uploading files...';
+      const appUrl = process.env.APP_URL
+      const options = {
+        files: path.join(buildDir, 'index.html'),
+        from: /http:\/\/localhost/g,
+        to: appUrl,
+      }
+      await replaceInFile(options)
+
+      spinner.text = 'Uploading files...'
       const uploadResponse = await apiClient.post(`/apps/${manifest.id}/upload`, {
         files: bundleFiles.map((file) => ({
           name: file,
           content: fs.readFileSync(path.join(buildDir, file), 'base64'),
         })),
-      });
+      })
 
-      spinner.succeed('App uploaded successfully.');
+      spinner.succeed('App uploaded successfully.')
     } catch (error) {
-      spinner.fail('Failed to upload the app.');
+      spinner.fail('Failed to upload the app.')
 
       if (error instanceof Error) {
-        this.error(`Error uploading app: ${error.message}`);
+        this.error(`Error uploading app: ${error.message}`)
       } else {
-        this.error('An unknown error occurred');
+        this.error('An unknown error occurred')
       }
     }
   }

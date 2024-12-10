@@ -66,3 +66,16 @@ export const getOrganization = (): string | null => {
 
   return null
 }
+
+/**
+ * Returns true is login tokena dn organization is set
+ */
+export const isLoggedIn = (): boolean => (
+  !!(getToken() && getOrganization())
+)
+
+export const isLoggedInOrError = (): void => {
+  if (!isLoggedIn()) {
+    throw new Error('You are not logged in.')
+  }
+}

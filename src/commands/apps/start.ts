@@ -3,6 +3,8 @@ import path from 'path'
 import fs from 'fs'
 import * as child_process from 'child_process'
 
+import { inAppFolderOrError } from '../../utils/appUtils.js'
+import { isLoggedInOrError } from '../../utils/configUtils.js'
 import { getManifest, validateManifest } from '../../utils/manifestUtils.js'
 import apiClient from '../../utils/apiClient.js'
 
@@ -38,6 +40,17 @@ export default class AppsStart extends Command {
   }
 
   public async run(): Promise<void> {
+
+    /**
+     * Check if the command is being run inside the app folder
+     */
+    inAppFolderOrError()
+
+    /**
+     * Check if user is logged in
+     */
+    isLoggedInOrError()
+
     const { flags } = await this.parse(AppsStart)
 
     /**

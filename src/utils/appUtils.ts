@@ -394,6 +394,10 @@ export const createAppStructure = (rootDir: string, app: App, version: string) =
       name: app.name,
       description: app.description,
       distribution_type: 'private',
+      post_install_action: {
+        type: 'external',
+        url: 'https://example.com',
+      },
     }, null, 2),
 
     /**
