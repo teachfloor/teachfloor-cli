@@ -7,11 +7,15 @@ export const validateManifest = (manifestPath: string): void => {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
   if (!manifest.name) {
-    throw new Error('Invalid manifest: "name" is a required fields.');
+    throw new Error('Invalid manifest: "name" is a required field.');
   }
 
   if (!manifest.id) {
-    throw new Error('Invalid manifest: "id" is a required fields.');
+    throw new Error('Invalid manifest: "id" is a required field.');
+  }
+
+  if (!manifest.version) {
+    throw new Error('Invalid manifest: "version" is a required field.');
   }
 }
 

@@ -1,10 +1,11 @@
 import { Command, Flags } from '@oclif/core'
 import path from 'path'
 import fs from 'fs'
-import * as child_process from 'child_process'
+import child_process from 'child_process'
+import open from 'open'
 
-import { inAppFolderOrError } from '../../utils/appUtils.js'
-import { isLoggedInOrError } from '../../utils/configUtils.js'
+import { inAppFolderOrError, isAppVersionApproved } from '../../utils/appUtils.js'
+import { getOrganization, isLoggedInOrError } from '../../utils/configUtils.js'
 import { getManifest, validateManifest } from '../../utils/manifestUtils.js'
 import apiClient from '../../utils/apiClient.js'
 
@@ -32,9 +33,9 @@ export default class AppsStart extends Command {
       return response.data.payload;
     } catch (error) {
       if (error instanceof Error) {
-        this.error(`Error uploading manifest: ${error.message}`);
+        this.error(`Error uploading manifest: ${error.message}`, { exit: 1 });
       } else {
-        this.error('An unknown error occurred');
+        this.error('An unknown error occurred', { exit: 1 });
       }
     }
   }
@@ -56,30 +57,53 @@ export default class AppsStart extends Command {
     /**
      * Current directory
      */
-    const appDir = process.cwd();
+    const appDir = process.cwd()
 
     /**
      * Manifest path
      */
     const manifestPath = flags.manifest
       ? path.resolve(flags.manifest)
-      : path.join(appDir, 'teachfloor-app.json');
+      : path.join(appDir, 'teachfloor-app.json')
 
-    const distPath = path.join(appDir, 'dist');
+    const distPath = path.join(appDir, 'dist')
 
     /**
      * Check if manifest file exists
      */
     if (!fs.existsSync(manifestPath)) {
-      this.error(`Manifest file not found at ${manifestPath}.`);
+      this.error(`Manifest file not found at ${manifestPath}.`)
     }
 
     /**
      * Validate manifest
      */
-    validateManifest(manifestPath);
+    validateManifest(manifestPath)
 
-    this.uploadManifest(getManifest(manifestPath));
+    const manifest = getManifest(manifestPath)
+
+    /**
+     * If the app version is approved, stop the command
+     * and ask user to create a new version
+     */
+    if (await isAppVersionApproved(manifest.id, manifest.version)) {
+      this.error(`Version ${manifest.version} is already approved.`, {
+        suggestions: ['Change the version property in the app manifest']
+      })
+    }
+
+    /**
+     * Upload manifest
+     */
+    this.uploadManifest(manifest)
+
+    try {
+      const installAppUrl = `${process.env.APP_URL}/${getOrganization()}/courses?app=${manifest.id}@${manifest.version}`
+      this.log(`Install URL: ${installAppUrl}`)
+      await open(installAppUrl)
+    } catch (error) {
+      this.error('Failed to open URL')
+    }
 
     /**
      * Start the development server
@@ -88,17 +112,17 @@ export default class AppsStart extends Command {
       cwd: appDir,
       stdio: 'inherit',
       shell: true,
-    });
+    })
 
     devServerProcess.on('error', (error) => {
-      this.error(`Failed to start development server: ${error.message}`);
-    });
+      this.error(`Failed to start development server: ${error.message}`)
+    })
 
     /**
      * Stop the child process when the CLI is terminated
      */
     process.on('exit', () => {
-      devServerProcess.kill();
-    });
+      devServerProcess.kill()
+    })
   }
 }

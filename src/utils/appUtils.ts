@@ -1,7 +1,9 @@
 import fs from 'fs'
 import path from 'path'
+import { AxiosError } from 'axios'
 
 import { App } from '../types/app.types.js'
+import apiClient from './apiClient.js'
 
 /**
  * Check if the command is being run inside the app folder
@@ -11,6 +13,9 @@ export const isAppFolder = (): boolean => {
   return requiredFiles.every((file) => fs.existsSync(path.join(process.cwd(), file)));
 }
 
+/**
+ * If we are not in a valid teachfloor app folder exit with error
+ */
 export const inAppFolderOrError = (): void => {
   if (!isAppFolder()) {
     throw new Error(
@@ -566,4 +571,23 @@ export default ${componentName}
   fs.writeFileSync(componentPath, content);
 
   return componentPath;
+}
+
+/**
+ * Check if an app version is approved
+ */
+export const isAppVersionApproved = async (appId: string, version: string) => {
+  try {
+    const response = await apiClient.get(`/apps/${appId}/versions/${version}`)
+    return response.data.payload.approved
+  } catch (error) {
+    const axiosError = error as AxiosError
+
+    if (axiosError.response?.status === 404) {
+      return false;
+    }
+
+    console.error('Error checking version:', axiosError.message)
+    process.exit(1)
+  }
 }
