@@ -220,7 +220,7 @@ export default AppSettings
 `.trim()
 )
 
-const getExampleViewContent = () => (
+const getExampleViewContent = (componentName = 'ExampleView') => (
 `import React, { useEffect } from 'react'
 import {
   Container,
@@ -237,7 +237,7 @@ import {
   useExtensionContext,
 } from '@teachfloor/extension-kit'
 
-const CourseDetailView = () => {
+const ${componentName} = () => {
   const { userContext, environment, appContext } = useExtensionContext()
 
   /**
@@ -352,7 +352,7 @@ const CourseDetailView = () => {
   )
 }
 
-export default CourseDetailView
+export default ${componentName}
 `.trim()
 )
 
@@ -560,7 +560,7 @@ export default ${componentName}
   `.trim();
 
   if (withExample) {
-    content = getExampleViewContent()
+    content = getExampleViewContent(componentName)
   }
 
   fs.writeFileSync(componentPath, content);

@@ -29,7 +29,7 @@ export default class AppsCreate extends Command {
     try {
       const response = await apiClient.post('/apps', {
         ...data,
-        // url: 'http://localhost:3000',
+        url: 'http://localhost:3000',
         meta: {
           source: 'cli',
           description: data.description,
