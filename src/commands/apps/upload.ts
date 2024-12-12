@@ -6,7 +6,7 @@ import { replaceInFile } from 'replace-in-file'
 import util from 'util'
 import ora from 'ora'
 
-import { inAppFolderOrError } from '../../utils/appUtils.js'
+import { inAppFolderOrError, isAppVersionApproved } from '../../utils/appUtils.js'
 import { isLoggedInOrError } from '../../utils/configUtils.js'
 import { getManifest, getManifestPath, validateManifest } from '../../utils/manifestUtils.js'
 import { delay } from '../../utils/utils.js'
@@ -20,6 +20,19 @@ export default class AppsUpload extends Command {
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
   ]
+
+  private async uploadManifest(manifest: any): Promise<any> {
+    try {
+      const response = await apiClient.post(`/apps/${manifest.id}/manifest`, { manifest });
+      return response.data.payload;
+    } catch (error) {
+      if (error instanceof Error) {
+        this.error(`Error uploading manifest: ${error.message}`, { exit: 1 });
+      } else {
+        this.error('An unknown error occurred', { exit: 1 });
+      }
+    }
+  }
 
   public async run(): Promise<void> {
     /**
@@ -39,7 +52,27 @@ export default class AppsUpload extends Command {
 
     const manifest = getManifest()
 
-    const spinner = ora('Starting upload...').start()
+    /**
+     * If the app version is approved, stop the command
+     * and ask user to create a new version
+     */
+    if (await isAppVersionApproved(manifest.id, manifest.version)) {
+      this.error(`Version ${manifest.version} is already approved.`, {
+        suggestions: ['Change the version property in the app manifest']
+      })
+    }
+
+    const spinner = ora().start()
+
+    /**
+     * Upload manifest
+     */
+    spinner.text = 'Uploading manifest...'
+    this.uploadManifest(manifest)
+
+    await delay(500)
+
+    spinner.text = 'Starting upload...'
 
     await delay(500)
 

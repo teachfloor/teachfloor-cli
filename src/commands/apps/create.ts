@@ -33,8 +33,9 @@ export default class AppsCreate extends Command {
         meta: {
           source: 'cli',
           description: data.description,
-          version: data.version,
-          sandbox_url: 'http://localhost:3000',
+          manifest: {
+            version: data.version,
+          },
         }
       });
       return response.data.payload;
