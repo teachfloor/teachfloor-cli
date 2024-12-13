@@ -9,6 +9,16 @@ import { getOrganization, isLoggedInOrError } from '../../utils/configUtils.js'
 import { getManifest, validateManifest } from '../../utils/manifestUtils.js'
 import apiClient from '../../utils/apiClient.js'
 
+/**
+ * In order this command executes:
+ *
+ * - Checks if command is executed inside a teachfloor app folder
+ * - Checks if user is logged in
+ * - Validates app manifest
+ * - Checks if app version can be uploaded
+ * - Uploads manifest to app / app version
+ * - Starts development server
+ */
 export default class AppsStart extends Command {
   static override description = 'Start a development server for viewing your app in the Teachfloor Dashboard'
 

@@ -14,6 +14,16 @@ import apiClient from '../../utils/apiClient.js'
 
 const execAsync = util.promisify(child_process.exec)
 
+/**
+ * In order this command executes:
+ *
+ * - Checks if command is executed inside a teachfloor app folder
+ * - Checks if user is logged in
+ * - Validates app manifest
+ * - Checks if app version can be uploaded
+ * - Builds production bundle
+ * - Uploads dist folder
+ */
 export default class AppsUpload extends Command {
   static override description = 'Upload your app to be submitted for review'
 
