@@ -457,10 +457,10 @@ export const createAppStructure = (rootDir: string, app: App, version: string) =
 
     [`${rootDir}/tsconfig.json`]: JSON.stringify({
       compilerOptions: {
-        target: "ES5",
-        lib: ["dom", "es2015"],
+        target: "ES6",
+        lib: ["dom", "esnext"],
         jsx: "react",   // Enable JSX transformation for React
-        module: "commonjs",
+        module: "ES6",
         moduleResolution: "node",
         strict: true,
         esModuleInterop: true
